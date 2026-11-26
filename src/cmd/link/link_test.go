@@ -481,11 +481,15 @@ func TestMachOBuildVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	found := false
-	checkMin := func(ver uint32) {
+	checkMin := func(ver, min uint32) {
 		major, minor, patch := (ver>>16)&0xff, (ver>>8)&0xff, (ver>>0)&0xff
-		if major < 13 {
-			t.Errorf("LC_BUILD_VERSION version %d.%d.%d < 13.0.0", major, minor, patch)
+		if ver < min {
+			t.Errorf("LC_BUILD_VERSION version %d.%d.%d < %d.%d.%d", major, minor, patch, (min>>16)&0xff, (min>>8)&0xff, (min>>0)&0xff)
 		}
+	}
+	minOS := uint32(10<<16 | 13<<8)
+	if runtime.GOARCH == "arm64" {
+		minOS = 11 << 16
 	}
 	for _, cmd := range exem.Loads {
 		raw := cmd.Raw()
@@ -494,9 +498,9 @@ func TestMachOBuildVersion(t *testing.T) {
 			continue
 		}
 		osVer := exem.ByteOrder.Uint32(raw[12:])
-		checkMin(osVer)
+		checkMin(osVer, minOS)
 		sdkVer := exem.ByteOrder.Uint32(raw[16:])
-		checkMin(sdkVer)
+		checkMin(sdkVer, 13<<16)
 		found = true
 		break
 	}

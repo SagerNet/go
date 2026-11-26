@@ -446,7 +446,7 @@ var (
 	//	go.dev/issue/30488
 	//	go.dev/issue/56784
 	//	go.dev/issue/77917
-	macOS  = macVersionFlag{13, 0, 0}
+	macOS  = macVersionFlag{10, 13, 0}
 	macSDK = macVersionFlag{26, 2, 0}
 )
 
@@ -473,9 +473,13 @@ func (ctxt *Link) domacho() {
 			machoPlatform = PLATFORM_IOS
 		}
 		if load == nil && machoPlatform == PLATFORM_MACOS {
+			osVersion := macOS.version()
+			if ctxt.Arch.Family == sys.ARM64 {
+				osVersion = max(osVersion, 11<<16)
+			}
 			ml := newMachoLoad(ctxt.Arch, imacho.LC_BUILD_VERSION, 4)
 			ml.data[0] = uint32(machoPlatform)
-			ml.data[1] = macOS.version()
+			ml.data[1] = osVersion
 			ml.data[2] = macSDK.version()
 			ml.data[3] = 0 // ntools
 		}
